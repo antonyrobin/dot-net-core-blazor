@@ -1,5 +1,5 @@
 # Use the official .NET SDK image to build the app
-FROM mcr.microsoft.comdotnetsdk10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR src
 
 # Copy csproj and restore as distinct layers
@@ -14,7 +14,7 @@ WORKDIR srcBlazorApp
 RUN dotnet publish BlazorApp.csproj -c Release -o apppublish
 
 # Use the official ASP.NET runtime image for the final container
-FROM mcr.microsoft.comdotnetaspnet10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR app
 COPY --from=build apppublish .
 
