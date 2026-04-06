@@ -1,0 +1,74 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="/" class="btn-link">Home</a>
+                </div>
+                <div>
+                    <button @onclick="ToggleDarkMode" class="btn btn-link" title="Toggle dark / light">
+                        @if (isDark)
+                        {
+                            <span>🌙</span>
+                        }
+                        else
+                        {
+                            <span>☀️</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    private bool isDark = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var res = await JS.InvokeAsync<string>("localStorage.getItem", "blazor_theme_mode");
+            if (res == "dark")
+            {
+                isDark = true;
+                await SetDarkModeOnDocument(true);
+            }
+        }
+        catch { }
+    }
+
+    private async Task ToggleDarkMode()
+    {
+        isDark = !isDark;
+        await SetDarkModeOnDocument(isDark);
+        try { await JS.InvokeVoidAsync("localStorage.setItem", "blazor_theme_mode", isDark ? "dark" : "light"); } catch { }
+    }
+
+    private async Task SetDarkModeOnDocument(bool dark)
+    {
+        if (dark)
+            await JS.InvokeVoidAsync("eval", "document.documentElement.classList.add('dark')");
+        else
+            await JS.InvokeVoidAsync("eval", "document.documentElement.classList.remove('dark')");
+    }
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+}

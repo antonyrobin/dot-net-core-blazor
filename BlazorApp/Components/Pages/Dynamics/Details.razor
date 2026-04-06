@@ -1,0 +1,79 @@
+﻿@page "/dynamics/details/{Id}"
+@using BlazorApp.Services.Interfaces
+@inject IFormSubmissionService SubmissionService
+@inject IFormDefinitionService FormDefService
+@inject IFileStorageService FileStorageService
+
+<PageTitle>Candidate Details</PageTitle>
+
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <a href="/dynamics/dashboard" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6">
+            ← Back to Candidates
+        </a>
+
+        <div class="bg-white rounded-3xl shadow-2xl p-8">
+            <div class="main-wrapper">
+                <div class="form-card">
+                    <div class="form-header mb-4">
+                        <h2 class="text-2xl font-bold theme-header">Candidate Details</h2>
+                    </div>
+
+                    @* Show first image control (if any) at the top *@
+                    @{
+                        var firstImage = Controls.FirstOrDefault(c => c.Type == "image" && Submission?.FileData.ContainsKey(c.Name) == true);
+                        if (firstImage != null)
+                        {
+                            <div class="text-center mb-4">
+                                <img src="@FileStorageService.GetBlobUrl(Submission.FileData[firstImage.Name], firstImage.Name)" class="w-28 h-28 rounded-full object-cover mx-auto border-2 border-gray-100" />
+                            </div>
+                        }
+                    }
+
+                    <div class="submitted-data-table space-y-4">
+                        @* Render controls in form order (excluding files/images which are shown separately) *@
+                        @foreach (var control in Controls.Where(c => c.Type != "file" && c.Type != "image"))
+                        {
+                            <div class="">
+                                <div class="text-sm font-semibold text-gray-700">@control.Label</div>
+                                <div class="text-base text-gray-800">@(Submission?.TextData.GetValueOrDefault(control.Name)?.ToString() ?? "")</div>
+                            </div>
+                        }
+                    </div>
+
+                    @* Attachments / files *@
+                    <div class="mt-6 space-y-3">
+                        @foreach (var control in Controls.Where(c => c.Type == "file" || c.Type == "image"))
+                        {
+                            if (Submission?.FileData != null && Submission.FileData.ContainsKey(control.Name))
+                            {
+                                // skip if this image was already displayed as firstImage
+                                if (firstImage != null && control.Name == firstImage.Name) continue;
+
+                                <div class="flex items-center gap-3">
+                                    <div class="text-sm font-medium text-gray-700">@control.Label</div>
+                                    <a href="@FileStorageService.GetBlobUrl(Submission.FileData[control.Name], control.Name)" target="_blank" class="text-blue-600 hover:underline text-sm">Download</a>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; } = string.Empty;
+
+    private FormSubmission? Submission;
+    private List<FormControl> Controls = new();
+    private bool IsLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Submission = await SubmissionService.GetByIdAsync(Id);
+        Controls = FormDefService.GetFormControls();
+        IsLoading = true;
+    }
+}
